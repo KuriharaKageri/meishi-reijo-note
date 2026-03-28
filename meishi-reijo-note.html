@@ -427,7 +427,7 @@ textarea.field-value { min-height: 80px; resize: vertical; line-height: 1.6; }
 
 <header>
   <h1>名刺礼状アシスタント</h1>
-  <span>MEISHI → REIJO v1.1</span>
+  <span>MEISHI → REIJO v1.3</span>
 </header>
 
 <div class="tab-nav">
@@ -455,13 +455,22 @@ textarea.field-value { min-height: 80px; resize: vertical; line-height: 1.6; }
   <!-- STEP1: 名刺アップロード -->
   <div class="section visible" id="sec-upload">
     <p class="section-title">名刺を撮影または読み込む</p>
+
+    <!-- 隠しinput群（captureなし＝ライブラリ選択、capture=environment＝カメラ） -->
+    <input type="file" id="file-input-library" accept="image/*" style="display:none">
+    <input type="file" id="file-input-camera"  accept="image/*" capture="environment" style="display:none">
+
     <div class="upload-area" id="upload-area">
-      <input type="file" id="file-input" accept="image/*" capture="environment">
-      <span class="upload-icon">📷</span>
-      <strong>名刺を撮影　または　画像を選択</strong>
-      <p>JPEG・PNG・HEIC 対応</p>
+      <span class="upload-icon">🗂️</span>
+      <strong>ここにドラッグ＆ドロップ</strong>
+      <p>または下のボタンから選択</p>
     </div>
-    <p class="upload-hint">スマホでは「カメラで撮影」が起動します</p>
+
+    <div class="btn-row" style="margin-top:0.8rem;">
+      <button class="btn btn-secondary" id="btn-pick-library">📁 フォトライブラリから選択</button>
+      <button class="btn btn-secondary" id="btn-pick-camera">📷 カメラで撮影</button>
+    </div>
+
     <div id="preview-container">
       <img id="preview-img" src="" alt="名刺プレビュー">
     </div>
@@ -787,25 +796,36 @@ function showLoading(id, show) {
 // ============================================================
 // STEP1: 名刺アップロード
 // ============================================================
-const fileInput = document.getElementById('file-input');
 const previewImg = document.getElementById('preview-img');
 const previewContainer = document.getElementById('preview-container');
 const btnRead = document.getElementById('btn-read');
 const uploadArea = document.getElementById('upload-area');
 const uploadError = document.getElementById('upload-error');
+const fileInputLibrary = document.getElementById('file-input-library');
+const fileInputCamera  = document.getElementById('file-input-camera');
 
-// ドラッグ＆ドロップ
+// ライブラリ選択ボタン
+document.getElementById('btn-pick-library').addEventListener('click', () => {
+  fileInputLibrary.value = '';
+  fileInputLibrary.click();
+});
+// カメラ撮影ボタン
+document.getElementById('btn-pick-camera').addEventListener('click', () => {
+  fileInputCamera.value = '';
+  fileInputCamera.click();
+});
+
+// 各inputのchange
+fileInputLibrary.addEventListener('change', e => { const f = e.target.files[0]; if (f) handleFile(f); });
+fileInputCamera.addEventListener('change',  e => { const f = e.target.files[0]; if (f) handleFile(f); });
+
+// ドラッグ＆ドロップ（PC用）
 uploadArea.addEventListener('dragover', e => { e.preventDefault(); uploadArea.classList.add('drag'); });
 uploadArea.addEventListener('dragleave', () => uploadArea.classList.remove('drag'));
 uploadArea.addEventListener('drop', e => {
   e.preventDefault();
   uploadArea.classList.remove('drag');
   const file = e.dataTransfer.files[0];
-  if (file) handleFile(file);
-});
-
-fileInput.addEventListener('change', e => {
-  const file = e.target.files[0];
   if (file) handleFile(file);
 });
 
@@ -1130,47 +1150,39 @@ document.getElementById('btn-gmail').addEventListener('click', () => {
 });
 
 function openGmail(text, toEmail, settings) {
+  // 件名の抽出：「件名：」「件名:」「Subject：」など広めに対応
   const lines = text.split('\n');
   let subject = '';
   let body    = text;
-  if (lines[0].startsWith('件名：') || lines[0].startsWith('件名:')) {
-    subject = lines[0].replace(/^件名[：:]\s*/, '').trim();
+  const subjectMatch = lines[0].match(/^(?:件名|Subject)[：:＊*]?\s*(.+)/i);
+  if (subjectMatch) {
+    subject = subjectMatch[1].trim();
     body    = lines.slice(1).join('\n').replace(/^\n+/, '');
   }
 
   const gmailFrom = settings.gmail || '';
-
-  // iPhoneのGmailアプリ向けURLスキーム（インストール済みならアプリが開く）
   const isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent);
 
   if (isIOS) {
-    // googlegmail:// スキームでGmailアプリを起動
-    const iosParams = new URLSearchParams({
-      to:   toEmail || '',
-      subj: subject,
-      body: body,
-    });
-    const iosUrl = `googlegmail://co?${iosParams.toString()}`;
-    const webUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(toEmail || '')}&su=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-
-    // アプリURLを試して、500ms後にアプリが開かなければWeb版へ
-    const start = Date.now();
-    window.location.href = iosUrl;
-    setTimeout(() => {
-      if (Date.now() - start < 1500) {
-        window.open(webUrl, '_blank');
+    // iOSはGmailアプリが署名を自動付加するため、本文末尾の署名ブロックを除去してから渡す
+    // 署名が設定されている場合、本文末尾から一致する部分を取り除く
+    let bodyForIOS = body;
+    const sig = (settings.signature || '').trim();
+    if (sig) {
+      // 署名の最初の1行を手がかりに末尾ブロックを検索して除去
+      const sigFirstLine = sig.split('\n')[0].trim();
+      const sigIdx = bodyForIOS.lastIndexOf(sigFirstLine);
+      if (sigIdx !== -1) {
+        bodyForIOS = bodyForIOS.slice(0, sigIdx).replace(/[\n\r\s]+$/, '');
       }
-    }, 500);
+    }
+    const iosParams = new URLSearchParams({ to: toEmail || '', subj: subject, body: bodyForIOS });
+    window.location.href = `googlegmail://co?${iosParams.toString()}`;
   } else {
-    // PC・Androidはウェブ版Gmailの新規作成画面を開く
-    const params = new URLSearchParams({
-      to:   toEmail || '',
-      su:   subject,
-      body: body,
-    });
+    // PC・AndroidはウェブGmail新規作成（署名はそのまま本文に含める）
+    const params = new URLSearchParams({ to: toEmail || '', su: subject, body: body });
     if (gmailFrom) params.set('authuser', gmailFrom);
-    const url = `https://mail.google.com/mail/?view=cm&fs=1&${params.toString()}`;
-    window.open(url, '_blank');
+    window.open(`https://mail.google.com/mail/?view=cm&fs=1&${params.toString()}`, '_blank');
   }
 }
 
