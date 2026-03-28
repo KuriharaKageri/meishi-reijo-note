@@ -1175,10 +1175,11 @@ function openGmail(text, toEmail, settings) {
       }
     }
     // mailto:スキームを使用（件名・本文・宛先を確実に渡せる標準方式）
-    // iOSの設定でGmailをデフォルトメールアプリにしていればGmailアプリで開く
+    // iOSのGmailアプリは\nを改行と認識しないため\r\nに変換して渡す
+    const bodyIOSCRLF = bodyForIOS.replace(/\n/g, '\r\n');
     const mailtoUrl = 'mailto:' + encodeURIComponent(toEmail || '')
                     + '?subject=' + encodeURIComponent(subject)
-                    + '&body='    + encodeURIComponent(bodyForIOS);
+                    + '&body='    + encodeURIComponent(bodyIOSCRLF);
     window.location.href = mailtoUrl;
   } else {
     // PC・AndroidはウェブGmail新規作成（署名はそのまま本文に含める）
