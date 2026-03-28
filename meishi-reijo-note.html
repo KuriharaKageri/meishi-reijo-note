@@ -427,7 +427,7 @@ textarea.field-value { min-height: 80px; resize: vertical; line-height: 1.6; }
 
 <header>
   <h1>名刺礼状アシスタント</h1>
-  <span>MEISHI → REIJO v1</span>
+  <span>MEISHI → REIJO v1.1</span>
 </header>
 
 <div class="tab-nav">
@@ -644,6 +644,11 @@ textarea.field-value { min-height: 80px; resize: vertical; line-height: 1.6; }
       <label class="settings-label">メールアドレス（任意）</label>
       <input class="settings-input" id="s-sender-email" type="email" placeholder="your@email.com">
     </div>
+    <div class="settings-row">
+      <label class="settings-label">署名（礼状末尾に自動挿入・任意）</label>
+      <textarea class="settings-input" id="s-signature" rows="5" placeholder="例：&#10;栗原 景&#10;フリーランスライター&#10;kageri@example.com&#10;https://note.com/kuriharakageri" style="resize:vertical;line-height:1.6;font-family:monospace;font-size:0.82rem;"></textarea>
+      <p class="settings-note">ここに入力した内容が礼状の末尾（差出人名の下）に挿入されます。Gmailの署名と同じ内容を登録しておくと便利です。</p>
+    </div>
   </div>
 
   <div class="settings-section">
@@ -843,6 +848,7 @@ async function readCard() {
   const prompt = `この名刺画像を読み取り、以下の項目をJSON形式で返してください。項目が名刺に記載されていない場合は空文字にしてください。ふりがな（kana）は名刺に明記されている場合のみ記載し、名刺にない場合は必ず空文字にしてください。
 
 電話番号が複数ある場合は、携帯電話番号（090/080/070始まり）を tel に入れ、残りを tel_extra に入れてください。
+FAXと明記されている番号はFAX番号です。tel にも tel_extra にも含めず、完全に無視してください。
 メールアドレスが複数ある場合は、最初のアドレスを email に入れ、残りを email_extra に入れてください。
 
 返答はJSONのみ、マークダウンや説明文は一切不要です。
@@ -855,8 +861,8 @@ async function readCard() {
   "role": "役職",
   "email": "メールアドレス",
   "email_extra": "2件目以降のメール（カンマ区切り）",
-  "tel": "電話番号（携帯優先）",
-  "tel_extra": "2件目以降の電話番号（カンマ区切り）",
+  "tel": "電話番号（携帯優先、FAX番号は除く）",
+  "tel_extra": "2件目以降の電話番号（カンマ区切り、FAX番号は除く）",
   "address": "住所"
 }`;
 
@@ -1000,6 +1006,8 @@ async function generateLetter() {
   const dateJp = date.replace(/-/g, '年').replace(/-/, '月') + '日';
   const recipient = buildRecipientStr(currentCard);
 
+  const signature = settings.signature || '';
+
   const prompt = `あなたはプロのライター・ジャーナリストです。
 以下の情報をもとに、名刺交換のお礼メールの下書きを作成してください。
 
@@ -1014,14 +1022,23 @@ ${memo || '（特になし）'}
 【差出人】
 ${sender}
 
+【署名（末尾に挿入）】
+${signature || '（なし）'}
+
 【礼状作成の指示】
 - 件名行（「件名：」で始める）と本文を作成する
+- 本文の書き出しは必ず以下の形式で始めること：
+  「本日ご挨拶をさせていただきました、[差出人の所属・肩書きがある場合はそれ]の[差出人氏名]です。」
+  ※所属・肩書きがない場合は「本日ご挨拶をさせていただきました、[差出人氏名]です。」
+- 書き出しの次の文は、状況・会話内容に場所が明記されている場合は「[場所]ではお世話になり、ありがとうございました。」、場所が不明・曖昧な場合は「その節はお世話になり、ありがとうございました。」とすること
+- 例文1（場所あり）：本日ご挨拶をさせていただきました、ライターの栗原景です。鉄道技術展ではお世話になり、ありがとうございました。
+- 例文2（場所なし）：本日ご挨拶をさせていただきました、山田一郎です。その節はお世話になり、ありがとうございました。
 - 簡潔で誠実な文体。くどくならないこと
 - ですます調で、かつ丁寧すぎず自然な文体
 - メールの形式（宛名→本文→署名）で作成する
-- 署名は差出人情報をシンプルに記載する
+- 署名欄には【署名】の内容をそのまま挿入する。署名が「（なし）」の場合は差出人名のみ記載する
 - 箇条書きは使わない
-- 全体で200〜350字程度が目安（簡潔に）
+- 本文（署名を除く）は200〜300字程度が目安（簡潔に）
 - 余計な説明や注釈は一切不要。メール本文のみを出力する`;
 
   try {
@@ -1122,15 +1139,39 @@ function openGmail(text, toEmail, settings) {
   }
 
   const gmailFrom = settings.gmail || '';
-  const params = new URLSearchParams({
-    to:      toEmail || '',
-    su:      subject,
-    body:    body,
-  });
-  if (gmailFrom) params.set('authuser', gmailFrom);
 
-  const url = `https://mail.google.com/mail/?view=cm&fs=1&${params.toString()}`;
-  window.open(url, '_blank');
+  // iPhoneのGmailアプリ向けURLスキーム（インストール済みならアプリが開く）
+  const isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent);
+
+  if (isIOS) {
+    // googlegmail:// スキームでGmailアプリを起動
+    const iosParams = new URLSearchParams({
+      to:   toEmail || '',
+      subj: subject,
+      body: body,
+    });
+    const iosUrl = `googlegmail://co?${iosParams.toString()}`;
+    const webUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(toEmail || '')}&su=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+
+    // アプリURLを試して、500ms後にアプリが開かなければWeb版へ
+    const start = Date.now();
+    window.location.href = iosUrl;
+    setTimeout(() => {
+      if (Date.now() - start < 1500) {
+        window.open(webUrl, '_blank');
+      }
+    }, 500);
+  } else {
+    // PC・Androidはウェブ版Gmailの新規作成画面を開く
+    const params = new URLSearchParams({
+      to:   toEmail || '',
+      su:   subject,
+      body: body,
+    });
+    if (gmailFrom) params.set('authuser', gmailFrom);
+    const url = `https://mail.google.com/mail/?view=cm&fs=1&${params.toString()}`;
+    window.open(url, '_blank');
+  }
 }
 
 document.getElementById('btn-reset').addEventListener('click', () => {
@@ -1291,6 +1332,8 @@ document.getElementById('btn-det-gen').addEventListener('click', async () => {
   document.getElementById('loading-det').style.display = 'block';
   document.getElementById('det-letter-wrap').style.display = 'none';
 
+  const signature = settings.signature || '';
+
   const prompt = `あなたはプロのライター・ジャーナリストです。
 以下の情報をもとに、名刺交換のお礼メールの下書きを作成してください。
 
@@ -1305,14 +1348,23 @@ ${memo || '（特になし）'}
 【差出人】
 ${sender}
 
+【署名（末尾に挿入）】
+${signature || '（なし）'}
+
 【礼状作成の指示】
 - 件名行（「件名：」で始める）と本文を作成する
+- 本文の書き出しは必ず以下の形式で始めること：
+  「本日ご挨拶をさせていただきました、[差出人の所属・肩書きがある場合はそれ]の[差出人氏名]です。」
+  ※所属・肩書きがない場合は「本日ご挨拶をさせていただきました、[差出人氏名]です。」
+- 書き出しの次の文は、状況・会話内容に場所が明記されている場合は「[場所]ではお世話になり、ありがとうございました。」、場所が不明・曖昧な場合は「その節はお世話になり、ありがとうございました。」とすること
+- 例文1（場所あり）：本日ご挨拶をさせていただきました、ライターの栗原景です。鉄道技術展ではお世話になり、ありがとうございました。
+- 例文2（場所なし）：本日ご挨拶をさせていただきました、山田一郎です。その節はお世話になり、ありがとうございました。
 - 簡潔で誠実な文体。くどくならないこと
 - ですます調で、かつ丁寧すぎず自然な文体
 - メールの形式（宛名→本文→署名）で作成する
-- 署名は差出人情報をシンプルに記載する
+- 署名欄には【署名】の内容をそのまま挿入する。署名が「（なし）」の場合は差出人名のみ記載する
 - 箇条書きは使わない
-- 全体で200〜350字程度が目安（簡潔に）
+- 本文（署名を除く）は200〜300字程度が目安（簡潔に）
 - 余計な説明や注釈は一切不要。メール本文のみを出力する`;
 
   try {
@@ -1389,6 +1441,7 @@ function loadSettingsForm() {
   document.getElementById('s-sender-name').value  = s.senderName || '';
   document.getElementById('s-sender-title').value = s.senderTitle || '';
   document.getElementById('s-sender-email').value = s.senderEmail || '';
+  document.getElementById('s-signature').value    = s.signature || '';
   document.getElementById('s-gas-url').value      = s.gasUrl || '';
   document.getElementById('s-gmail').value        = s.gmail || '';
 }
@@ -1399,6 +1452,7 @@ document.getElementById('btn-save-settings').addEventListener('click', () => {
     senderName:  document.getElementById('s-sender-name').value.trim(),
     senderTitle: document.getElementById('s-sender-title').value.trim(),
     senderEmail: document.getElementById('s-sender-email').value.trim(),
+    signature:   document.getElementById('s-signature').value,
     gasUrl:      document.getElementById('s-gas-url').value.trim(),
     gmail:       document.getElementById('s-gmail').value.trim(),
   };
