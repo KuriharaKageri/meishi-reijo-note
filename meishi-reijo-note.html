@@ -427,7 +427,7 @@ textarea.field-value { min-height: 80px; resize: vertical; line-height: 1.6; }
 
 <header>
   <h1>名刺礼状アシスタント</h1>
-  <span>MEISHI → REIJO v1.4</span>
+  <span>MEISHI → REIJO v1.5</span>
 </header>
 
 <div class="tab-nav">
@@ -1175,8 +1175,9 @@ function openGmail(text, toEmail, settings) {
       }
     }
     // URLSearchParamsはスペースを「+」に変換するため、encodeURIComponentで直接組み立てる
-    const iosUrl = 'googlegmail://co?to=' + encodeURIComponent(toEmail || '')
-                 + '&subj=' + encodeURIComponent(subject)
+    // 正しいスキーム：スラッシュ3つ、件名パラメータは subject
+    const iosUrl = 'googlegmail:///co?to=' + encodeURIComponent(toEmail || '')
+                 + '&subject=' + encodeURIComponent(subject)
                  + '&body=' + encodeURIComponent(bodyForIOS);
     window.location.href = iosUrl;
   } else {
