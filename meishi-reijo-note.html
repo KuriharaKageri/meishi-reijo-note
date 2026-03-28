@@ -427,7 +427,7 @@ textarea.field-value { min-height: 80px; resize: vertical; line-height: 1.6; }
 
 <header>
   <h1>名刺礼状アシスタント</h1>
-  <span>MEISHI → REIJO v1.5</span>
+  <span>MEISHI → REIJO v1.6</span>
 </header>
 
 <div class="tab-nav">
@@ -1174,12 +1174,12 @@ function openGmail(text, toEmail, settings) {
         bodyForIOS = bodyForIOS.slice(0, sigIdx).replace(/[\n\r\s]+$/, '');
       }
     }
-    // URLSearchParamsはスペースを「+」に変換するため、encodeURIComponentで直接組み立てる
-    // 正しいスキーム：スラッシュ3つ、件名パラメータは subject
-    const iosUrl = 'googlegmail:///co?to=' + encodeURIComponent(toEmail || '')
-                 + '&subject=' + encodeURIComponent(subject)
-                 + '&body=' + encodeURIComponent(bodyForIOS);
-    window.location.href = iosUrl;
+    // mailto:スキームを使用（件名・本文・宛先を確実に渡せる標準方式）
+    // iOSの設定でGmailをデフォルトメールアプリにしていればGmailアプリで開く
+    const mailtoUrl = 'mailto:' + encodeURIComponent(toEmail || '')
+                    + '?subject=' + encodeURIComponent(subject)
+                    + '&body='    + encodeURIComponent(bodyForIOS);
+    window.location.href = mailtoUrl;
   } else {
     // PC・AndroidはウェブGmail新規作成（署名はそのまま本文に含める）
     // こちらもencodeURIComponentで統一してスペース→+問題を防ぐ
