@@ -1,0 +1,1440 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>名刺礼状アシスタント</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@300;400;500;600&family=Noto+Sans+JP:wght@300;400;500&display=swap" rel="stylesheet">
+
+<style>
+:root {
+  --ink: #2a1f14;
+  --ink-mid: #5a4a3a;
+  --ink-light: #8a7a6a;
+  --paper: #faf7f2;
+  --paper-warm: #f4ede0;
+  --paper-deep: #ede0cc;
+  --red: #9b2c2c;
+  --red-light: #c0392b;
+  --gold: #b8860b;
+  --blue: #2c5f8a;
+  --green: #2d6a4f;
+  --border: #d4c4a8;
+  --border-light: #e8dcc8;
+  --shadow: rgba(42,31,20,0.12);
+  --radius: 4px;
+  --float-z: 1000;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { font-size: 16px; scroll-behavior: smooth; }
+
+body {
+  font-family: 'Noto Sans JP', sans-serif;
+  background: var(--paper);
+  color: var(--ink);
+  min-height: 100vh;
+  padding-bottom: 100px;
+}
+
+/* ── ヘッダー ── */
+header {
+  background: var(--ink);
+  color: var(--paper);
+  padding: 1rem 1.5rem;
+  display: flex;
+  align-items: baseline;
+  gap: 1rem;
+  position: sticky;
+  top: 0;
+  z-index: 200;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+}
+header h1 {
+  font-family: 'Noto Serif JP', serif;
+  font-weight: 500;
+  font-size: 1.1rem;
+  letter-spacing: 0.05em;
+}
+header span {
+  font-size: 0.65rem;
+  color: var(--ink-light);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+/* ── タブナビ ── */
+.tab-nav {
+  display: flex;
+  background: var(--paper-warm);
+  border-bottom: 2px solid var(--border);
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.tab-btn {
+  flex: 1;
+  min-width: 100px;
+  padding: 0.75rem 1rem;
+  border: none;
+  background: transparent;
+  color: var(--ink-light);
+  font-family: 'Noto Sans JP', sans-serif;
+  font-size: 0.82rem;
+  cursor: pointer;
+  border-bottom: 3px solid transparent;
+  margin-bottom: -2px;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+.tab-btn.active {
+  color: var(--red);
+  border-bottom-color: var(--red);
+  background: var(--paper);
+  font-weight: 500;
+}
+.tab-btn:hover:not(.active) { background: var(--paper-deep); color: var(--ink-mid); }
+
+/* ── コンテナ ── */
+.container {
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 1.5rem 1rem;
+}
+
+/* ── ステップインジケーター ── */
+.steps {
+  display: flex;
+  gap: 0;
+  margin-bottom: 1.5rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.step {
+  flex: 1;
+  text-align: center;
+  padding: 0.55rem 0.3rem;
+  font-size: 0.72rem;
+  background: var(--paper-warm);
+  color: var(--ink-light);
+  border-right: 1px solid var(--border);
+  transition: all 0.3s;
+}
+.step:last-child { border-right: none; }
+.step.active { background: var(--red); color: #fff; font-weight: 500; }
+.step.done { background: var(--paper-deep); color: var(--ink-mid); }
+
+/* ── セクション ── */
+.section {
+  display: none;
+  animation: fadeIn 0.3s ease;
+}
+.section.visible { display: block; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+
+.section-title {
+  font-family: 'Noto Serif JP', serif;
+  font-size: 0.85rem;
+  color: var(--ink-mid);
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--border-light);
+  letter-spacing: 0.05em;
+}
+
+/* ── アップロードエリア ── */
+.upload-area {
+  border: 2px dashed var(--border);
+  border-radius: var(--radius);
+  padding: 2.5rem 1.5rem;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: var(--paper-warm);
+  position: relative;
+}
+.upload-area:hover, .upload-area.drag { border-color: var(--red); background: #fdf0e8; }
+.upload-area input[type="file"] {
+  position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;
+}
+.upload-icon { font-size: 2.5rem; display: block; margin-bottom: 0.8rem; }
+.upload-area strong { font-size: 0.95rem; color: var(--ink-mid); display: block; margin-bottom: 0.4rem; }
+.upload-area p { font-size: 0.75rem; color: var(--ink-light); }
+
+.upload-hint {
+  margin-top: 0.6rem;
+  font-size: 0.72rem;
+  color: var(--ink-light);
+  text-align: center;
+}
+
+#preview-container { margin: 1rem 0; text-align: center; display: none; }
+#preview-img { max-width: 100%; max-height: 280px; border-radius: var(--radius); box-shadow: 0 2px 12px var(--shadow); }
+
+/* ── ボタン ── */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  padding: 0.7rem 1.4rem;
+  border: none;
+  border-radius: var(--radius);
+  font-family: 'Noto Sans JP', sans-serif;
+  font-size: 0.87rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  letter-spacing: 0.02em;
+  width: 100%;
+  margin-top: 0.8rem;
+}
+.btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.btn-primary { background: var(--red); color: #fff; }
+.btn-primary:hover:not(:disabled) { background: var(--red-light); }
+.btn-secondary { background: transparent; border: 1px solid var(--border); color: var(--ink-mid); }
+.btn-secondary:hover { background: var(--paper-warm); }
+.btn-blue { background: var(--blue); color: #fff; }
+.btn-blue:hover:not(:disabled) { background: #1e4a70; }
+.btn-green { background: var(--green); color: #fff; }
+.btn-green:hover:not(:disabled) { background: #1e5c3f; }
+.btn-small { padding: 0.4rem 0.9rem; font-size: 0.78rem; width: auto; margin-top: 0; }
+.btn-row { display: flex; gap: 0.6rem; margin-top: 0.8rem; flex-wrap: wrap; }
+.btn-row .btn { flex: 1; min-width: 120px; margin-top: 0; }
+
+/* ── カードグリッド（名刺情報） ── */
+.card-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.8rem;
+  margin-bottom: 1rem;
+}
+.card-field { display: flex; flex-direction: column; gap: 0.3rem; }
+.card-field.full { grid-column: 1 / -1; }
+.field-label { font-size: 0.68rem; color: var(--ink-light); letter-spacing: 0.05em; font-family: 'Noto Serif JP', serif; }
+.field-value {
+  padding: 0.55rem 0.7rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: #fff;
+  font-family: 'Noto Sans JP', sans-serif;
+  font-size: 0.87rem;
+  color: var(--ink);
+  width: 100%;
+  transition: border-color 0.15s;
+}
+.field-value:focus { outline: none; border-color: var(--red); }
+textarea.field-value { min-height: 80px; resize: vertical; line-height: 1.6; }
+
+/* ── メモグリッド ── */
+.memo-grid { display: flex; flex-direction: column; gap: 0.8rem; margin-bottom: 1rem; }
+.memo-field { display: flex; flex-direction: column; gap: 0.3rem; }
+
+/* ── 礼状エディタ ── */
+.letter-editor {
+  width: 100%;
+  min-height: 380px;
+  padding: 1.2rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: #fff;
+  font-family: 'Noto Serif JP', serif;
+  font-size: 0.9rem;
+  line-height: 2;
+  color: var(--ink);
+  resize: vertical;
+  transition: border-color 0.15s;
+}
+.letter-editor:focus { outline: none; border-color: var(--red); }
+
+/* ── ローディング ── */
+.loading {
+  display: none;
+  text-align: center;
+  padding: 2.5rem 1rem;
+}
+.spinner {
+  width: 36px; height: 36px;
+  border: 3px solid var(--border);
+  border-top-color: var(--red);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin: 0 auto 1rem;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.loading p { font-size: 0.82rem; color: var(--ink-light); }
+
+/* ── エラー ── */
+.error-msg { color: var(--red); font-size: 0.8rem; margin-top: 0.5rem; min-height: 1.2em; }
+
+/* ── コピーフィードバック ── */
+.copy-feedback { font-size: 0.78rem; color: var(--green); opacity: 0; transition: opacity 0.3s; margin-left: 0.5rem; }
+.copy-feedback.show { opacity: 1; }
+
+/* ── フロートボタン ── */
+.float-btn-wrap {
+  position: fixed;
+  bottom: 1.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: var(--float-z);
+  display: none;
+  width: calc(100% - 2rem);
+  max-width: 400px;
+}
+.float-btn-wrap.visible { display: block; }
+.float-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.85rem 1.5rem;
+  background: var(--ink);
+  color: var(--paper);
+  border: none;
+  border-radius: 50px;
+  font-family: 'Noto Sans JP', sans-serif;
+  font-size: 0.87rem;
+  cursor: pointer;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.35);
+  transition: all 0.2s;
+  letter-spacing: 0.03em;
+}
+.float-btn:hover { background: #3a2d20; transform: translateY(-1px); box-shadow: 0 6px 24px rgba(0,0,0,0.4); }
+.float-btn .icon { font-size: 1.1rem; }
+
+/* ── 記録リスト ── */
+.record-card {
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius);
+  padding: 1rem 1.1rem;
+  margin-bottom: 0.7rem;
+  background: #fff;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.record-card:hover { border-color: var(--border); box-shadow: 0 2px 8px var(--shadow); }
+.record-card.selected { border-color: var(--red); background: #fff8f5; }
+.record-card-name { font-family: 'Noto Serif JP', serif; font-size: 0.95rem; margin-bottom: 0.3rem; }
+.record-card-meta { font-size: 0.72rem; color: var(--ink-light); display: flex; gap: 1rem; flex-wrap: wrap; }
+.badge {
+  display: inline-block;
+  padding: 0.15rem 0.5rem;
+  border-radius: 2px;
+  font-size: 0.65rem;
+  font-weight: 500;
+  letter-spacing: 0.05em;
+}
+.badge-done { background: var(--green); color: #fff; }
+.badge-pending { background: var(--paper-deep); color: var(--ink-mid); }
+
+/* ── 設定タブ ── */
+.settings-section {
+  background: var(--paper-warm);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius);
+  padding: 1.2rem;
+  margin-bottom: 1rem;
+}
+.settings-section h3 { font-family: 'Noto Serif JP', serif; font-size: 0.88rem; margin-bottom: 0.8rem; color: var(--ink-mid); }
+.settings-row { display: flex; flex-direction: column; gap: 0.3rem; margin-bottom: 0.7rem; }
+.settings-row:last-child { margin-bottom: 0; }
+.settings-label { font-size: 0.72rem; color: var(--ink-light); letter-spacing: 0.04em; }
+.settings-input {
+  padding: 0.55rem 0.7rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: #fff;
+  font-size: 0.87rem;
+  font-family: 'Noto Sans JP', sans-serif;
+  color: var(--ink);
+  width: 100%;
+}
+.settings-input:focus { outline: none; border-color: var(--red); }
+.settings-note { font-size: 0.7rem; color: var(--ink-light); margin-top: 0.3rem; line-height: 1.5; }
+
+/* ── 空リスト ── */
+.empty-state {
+  text-align: center;
+  padding: 3rem 1rem;
+  color: var(--ink-light);
+  font-size: 0.85rem;
+}
+.empty-state .empty-icon { font-size: 2.5rem; display: block; margin-bottom: 0.8rem; }
+
+/* ── セパレーター ── */
+.divider { border: none; border-top: 1px solid var(--border-light); margin: 1.2rem 0; }
+
+/* ── APIキー警告 ── */
+.api-warning {
+  background: #fff8e1;
+  border: 1px solid #f6d75a;
+  border-radius: var(--radius);
+  padding: 0.8rem 1rem;
+  font-size: 0.78rem;
+  color: #7a5a00;
+  margin-bottom: 1rem;
+  display: none;
+}
+.api-warning.show { display: block; }
+
+/* ── リセットリンク ── */
+.reset-link {
+  background: none; border: none; color: var(--ink-light); font-size: 0.75rem;
+  cursor: pointer; text-decoration: underline; font-family: inherit; margin-top: 0.8rem; display: block; text-align: center;
+}
+.reset-link:hover { color: var(--ink-mid); }
+
+/* ── レスポンシブ ── */
+@media (max-width: 480px) {
+  .card-grid { grid-template-columns: 1fr; }
+  .card-field.full { grid-column: 1; }
+  header h1 { font-size: 1rem; }
+  .btn-row { flex-direction: column; }
+  .btn-row .btn { min-width: unset; }
+}
+@media (min-width: 640px) {
+  .container { padding: 2rem 1.5rem; }
+  .float-btn-wrap { bottom: 2rem; }
+}
+
+/* ── シートステータス ── */
+.sheet-status { font-size: 0.78rem; margin-top: 0.4rem; min-height: 1.2em; }
+.sheet-status.ok { color: var(--green); }
+.sheet-status.err { color: var(--red); }
+
+/* 詳細展開 */
+.detail-panel {
+  background: var(--paper-warm);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius);
+  padding: 1rem 1.1rem;
+  margin-bottom: 1rem;
+  font-size: 0.83rem;
+  line-height: 1.8;
+  display: none;
+}
+.detail-panel.open { display: block; }
+.detail-row { display: flex; gap: 0.5rem; margin-bottom: 0.3rem; }
+.detail-key { color: var(--ink-light); min-width: 80px; flex-shrink: 0; }
+.detail-val { color: var(--ink); }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>名刺礼状アシスタント</h1>
+  <span>MEISHI → REIJO v1</span>
+</header>
+
+<div class="tab-nav">
+  <button class="tab-btn active" data-tab="new">新規</button>
+  <button class="tab-btn" data-tab="list">名刺リスト</button>
+  <button class="tab-btn" data-tab="settings">設定</button>
+</div>
+
+<!-- ============================================================ -->
+<!-- 新規タブ                                                       -->
+<!-- ============================================================ -->
+<div class="container" id="tab-new">
+
+  <div class="steps">
+    <div class="step active" id="step1">① 名刺読取</div>
+    <div class="step" id="step2">② 情報確認</div>
+    <div class="step" id="step3">③ メモ入力</div>
+    <div class="step" id="step4">④ 礼状生成</div>
+  </div>
+
+  <div class="api-warning" id="api-warning">
+    ⚠ Claude APIキーが設定されていません。「設定」タブで入力してください。
+  </div>
+
+  <!-- STEP1: 名刺アップロード -->
+  <div class="section visible" id="sec-upload">
+    <p class="section-title">名刺を撮影または読み込む</p>
+    <div class="upload-area" id="upload-area">
+      <input type="file" id="file-input" accept="image/*" capture="environment">
+      <span class="upload-icon">📷</span>
+      <strong>名刺を撮影　または　画像を選択</strong>
+      <p>JPEG・PNG・HEIC 対応</p>
+    </div>
+    <p class="upload-hint">スマホでは「カメラで撮影」が起動します</p>
+    <div id="preview-container">
+      <img id="preview-img" src="" alt="名刺プレビュー">
+    </div>
+    <div class="error-msg" id="upload-error"></div>
+    <button class="btn btn-primary" id="btn-read" disabled>名刺を読み取る →</button>
+  </div>
+
+  <div class="loading" id="loading-read">
+    <div class="spinner"></div>
+    <p>名刺情報をAIで読み取っています…</p>
+  </div>
+
+  <!-- STEP2: 情報確認・編集 -->
+  <div class="section" id="sec-confirm">
+    <p class="section-title">読み取り結果を確認・修正してください</p>
+    <div class="card-grid">
+      <div class="card-field full">
+        <span class="field-label">氏名</span>
+        <input class="field-value" id="f-name" type="text" placeholder="山田 太郎">
+      </div>
+      <div class="card-field full">
+        <span class="field-label">ふりがな（名刺記載のみ）</span>
+        <input class="field-value" id="f-kana" type="text" placeholder="名刺に記載がある場合のみ">
+      </div>
+      <div class="card-field full">
+        <span class="field-label">会社名</span>
+        <input class="field-value" id="f-company" type="text" placeholder="株式会社〇〇">
+      </div>
+      <div class="card-field">
+        <span class="field-label">部署</span>
+        <input class="field-value" id="f-dept" type="text" placeholder="営業部">
+      </div>
+      <div class="card-field">
+        <span class="field-label">役職</span>
+        <input class="field-value" id="f-role" type="text" placeholder="部長">
+      </div>
+      <div class="card-field full">
+        <span class="field-label">メールアドレス</span>
+        <input class="field-value" id="f-email" type="email" placeholder="yamada@example.com">
+      </div>
+      <div class="card-field full">
+        <span class="field-label">電話番号（携帯優先）</span>
+        <input class="field-value" id="f-tel" type="tel" placeholder="090-0000-0000">
+      </div>
+      <div class="card-field full">
+        <span class="field-label">住所</span>
+        <input class="field-value" id="f-address" type="text" placeholder="〒000-0000 東京都…">
+      </div>
+      <div class="card-field full">
+        <span class="field-label">備考（2件目以降の電話・メールなど）</span>
+        <textarea class="field-value" id="f-note" placeholder="TEL: 03-0000-0000　Email: sub@example.com"></textarea>
+      </div>
+    </div>
+    <div class="error-msg" id="confirm-error"></div>
+    <button class="btn btn-primary" id="btn-to-memo">メモ入力へ →</button>
+  </div>
+
+  <!-- STEP3: メモ入力 -->
+  <div class="section" id="sec-memo">
+    <p class="section-title">名刺交換の状況を入力してください</p>
+    <div class="memo-grid">
+      <div class="memo-field">
+        <span class="field-label">名刺交換した日</span>
+        <input class="field-value" id="f-date" type="date">
+      </div>
+      <div class="memo-field">
+        <span class="field-label">状況・会話内容・その他メモ</span>
+        <textarea class="field-value" id="f-memo" style="min-height:120px;"
+          placeholder="例：○○取材で訪問。広報担当の△△氏と名刺交換。JRの新ダイヤについて詳しく説明いただいた。次号での掲載を前提に取材許可をいただいた。"></textarea>
+      </div>
+      <div class="memo-field">
+        <span class="field-label">差出人名（省略時：設定の署名を使用）</span>
+        <input class="field-value" id="f-sender" type="text" placeholder="設定の値を使用">
+      </div>
+    </div>
+    <div class="error-msg" id="memo-error"></div>
+    <button class="btn btn-primary" id="btn-generate">礼状の下書きを生成する →</button>
+    <button class="btn btn-secondary" id="btn-back-confirm">← 情報確認に戻る</button>
+  </div>
+
+  <div class="loading" id="loading-gen">
+    <div class="spinner"></div>
+    <p>礼状の下書きを生成しています…</p>
+  </div>
+
+  <!-- STEP4: 礼状エディタ -->
+  <div class="section" id="sec-letter">
+    <p class="section-title">礼状の下書き（編集できます）</p>
+    <textarea class="letter-editor" id="letter-editor" spellcheck="false"></textarea>
+    <div class="btn-row" style="margin-top:0.8rem;">
+      <button class="btn btn-secondary" id="btn-copy">テキストをコピー</button>
+      <button class="btn btn-blue" id="btn-gmail">Gmailで開く</button>
+    </div>
+    <span class="copy-feedback" id="copy-feedback">コピーしました ✓</span>
+    <hr class="divider">
+    <button class="btn btn-secondary btn-small" id="btn-regen" style="width:auto;">↩ 下書きを再生成</button>
+    <button class="reset-link" id="btn-reset">次の名刺へ（最初に戻る）</button>
+  </div>
+
+</div><!-- /tab-new -->
+
+<!-- ============================================================ -->
+<!-- 名刺リストタブ                                                 -->
+<!-- ============================================================ -->
+<div class="container" id="tab-list" style="display:none;">
+  <p class="section-title">保存した名刺</p>
+
+  <div id="record-list-area">
+    <div class="empty-state" id="empty-list">
+      <span class="empty-icon">🗂️</span>
+      <p>まだ名刺が保存されていません。</p>
+    </div>
+  </div>
+
+  <!-- 詳細・再生成エリア -->
+  <div id="record-detail-wrap" style="display:none;">
+    <hr class="divider">
+    <p class="section-title" id="detail-title-name"></p>
+
+    <div class="detail-panel open" id="detail-info"></div>
+
+    <div class="memo-grid" style="margin-top:0.8rem;">
+      <div class="memo-field">
+        <span class="field-label">状況・メモ（修正可）</span>
+        <textarea class="field-value" id="det-memo" style="min-height:100px;"></textarea>
+      </div>
+    </div>
+
+    <button class="btn btn-primary" id="btn-det-gen">礼状を再生成する →</button>
+
+    <div class="loading" id="loading-det" style="display:none;">
+      <div class="spinner"></div>
+      <p>礼状を生成しています…</p>
+    </div>
+
+    <div id="det-letter-wrap" style="display:none;margin-top:1rem;">
+      <p class="section-title">礼状の下書き（編集できます）</p>
+      <textarea class="letter-editor" id="det-letter-editor" spellcheck="false"></textarea>
+      <div class="btn-row">
+        <button class="btn btn-secondary" id="btn-det-copy">テキストをコピー</button>
+        <button class="btn btn-blue" id="btn-det-gmail">Gmailで開く</button>
+      </div>
+      <span class="copy-feedback" id="det-copy-feedback">コピーしました ✓</span>
+    </div>
+
+    <div class="error-msg" id="det-error"></div>
+    <div class="sheet-status" id="det-sheet-status"></div>
+
+    <hr class="divider">
+    <button class="btn btn-secondary btn-small" id="btn-det-delete" style="color:var(--red);border-color:var(--red);">この記録を削除</button>
+  </div>
+</div><!-- /tab-list -->
+
+<!-- ============================================================ -->
+<!-- 設定タブ                                                       -->
+<!-- ============================================================ -->
+<div class="container" id="tab-settings" style="display:none;">
+  <p class="section-title">設定</p>
+
+  <div class="settings-section">
+    <h3>🔑 Claude API キー</h3>
+    <div class="settings-row">
+      <label class="settings-label">Anthropic API キー</label>
+      <input class="settings-input" id="s-apikey" type="password" placeholder="sk-ant-...">
+      <p class="settings-note">Anthropic Console（console.anthropic.com）で取得したAPIキーを入力してください。このキーはブラウザのローカルストレージに保存され、外部には送信されません。</p>
+    </div>
+  </div>
+
+  <div class="settings-section">
+    <h3>✍️ 差出人情報</h3>
+    <div class="settings-row">
+      <label class="settings-label">氏名</label>
+      <input class="settings-input" id="s-sender-name" type="text" placeholder="栗原 景">
+    </div>
+    <div class="settings-row">
+      <label class="settings-label">所属・肩書き（任意）</label>
+      <input class="settings-input" id="s-sender-title" type="text" placeholder="フリーランスライター">
+    </div>
+    <div class="settings-row">
+      <label class="settings-label">メールアドレス（任意）</label>
+      <input class="settings-input" id="s-sender-email" type="email" placeholder="your@email.com">
+    </div>
+  </div>
+
+  <div class="settings-section">
+    <h3>📊 Googleスプレッドシート連携（任意）</h3>
+    <div class="settings-row">
+      <label class="settings-label">GAS デプロイ URL</label>
+      <input class="settings-input" id="s-gas-url" type="url" placeholder="https://script.google.com/macros/s/...">
+      <p class="settings-note">Googleスプレッドシートに記録する場合のみ入力してください。GASのセットアップ手順は別途ドキュメントを参照してください。</p>
+    </div>
+  </div>
+
+  <div class="settings-section">
+    <h3>✉️ Gmailアドレス（任意）</h3>
+    <div class="settings-row">
+      <label class="settings-label">送信者Gmailアドレス</label>
+      <input class="settings-input" id="s-gmail" type="email" placeholder="your@gmail.com">
+      <p class="settings-note">「Gmailで開く」ボタンの送信元として使用します。</p>
+    </div>
+  </div>
+
+  <button class="btn btn-primary" id="btn-save-settings">設定を保存</button>
+  <div class="sheet-status" id="settings-status"></div>
+
+  <hr class="divider">
+  <div class="settings-section" style="background:#fff8f5;">
+    <h3>🗑️ データ管理</h3>
+    <p class="settings-note" style="margin-bottom:0.8rem;">ローカルに保存された全ての名刺データを削除します。この操作は元に戻せません。</p>
+    <button class="btn btn-secondary btn-small" id="btn-clear-all" style="color:var(--red);border-color:var(--red);">全データを削除する</button>
+  </div>
+</div><!-- /tab-settings -->
+
+<!-- ── フロートボタン ── -->
+<div class="float-btn-wrap" id="float-sheet-wrap">
+  <button class="float-btn" id="float-sheet-btn">
+    <span class="icon">📋</span>シートに記録する
+  </button>
+</div>
+
+<script>
+// ============================================================
+// データ・状態管理
+// ============================================================
+const STORAGE_KEY = 'meishi_reijo_records';
+const SETTINGS_KEY = 'meishi_reijo_settings';
+
+let currentCard = {};  // 現在入力中の名刺データ
+let currentLetter = '';
+let selectedRecordId = null;
+let imageBase64 = '';
+let imageMediaType = 'image/jpeg';
+
+// 設定
+function getSettings() {
+  try { return JSON.parse(localStorage.getItem(SETTINGS_KEY)) || {}; } catch { return {}; }
+}
+function saveSettings(s) { localStorage.setItem(SETTINGS_KEY, JSON.stringify(s)); }
+
+// 記録
+function getRecords() {
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; } catch { return []; }
+}
+function saveRecords(r) { localStorage.setItem(STORAGE_KEY, JSON.stringify(r)); }
+
+function addRecord(record) {
+  const records = getRecords();
+  records.unshift(record);
+  saveRecords(records);
+  return record;
+}
+
+function updateRecord(id, patch) {
+  const records = getRecords();
+  const idx = records.findIndex(r => r.id === id);
+  if (idx !== -1) { records[idx] = { ...records[idx], ...patch }; saveRecords(records); }
+}
+
+function deleteRecord(id) {
+  const records = getRecords().filter(r => r.id !== id);
+  saveRecords(records);
+}
+
+function generateId() { return Date.now().toString(36) + Math.random().toString(36).slice(2); }
+
+function todayStr() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+// ============================================================
+// タブ切り替え
+// ============================================================
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const tab = btn.dataset.tab;
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('tab-new').style.display = 'none';
+    document.getElementById('tab-list').style.display = 'none';
+    document.getElementById('tab-settings').style.display = 'none';
+    document.getElementById('tab-' + tab).style.display = 'block';
+    if (tab === 'list') renderRecordList();
+    if (tab === 'settings') loadSettingsForm();
+    if (tab !== 'new') hideFloatBtn();
+  });
+});
+
+// ============================================================
+// フロートボタン制御
+// ============================================================
+function showFloatBtn() { document.getElementById('float-sheet-wrap').classList.add('visible'); }
+function hideFloatBtn() { document.getElementById('float-sheet-wrap').classList.remove('visible'); }
+
+// ============================================================
+// STEP ユーティリティ
+// ============================================================
+function showSection(id) {
+  ['sec-upload','sec-confirm','sec-memo','sec-letter'].forEach(s => {
+    document.getElementById(s).classList.remove('visible');
+  });
+  const el = document.getElementById(id);
+  if (el) el.classList.add('visible');
+}
+
+function setStep(n) {
+  document.querySelectorAll('.step').forEach((s, i) => {
+    s.classList.remove('active','done');
+    if (i + 1 === n) s.classList.add('active');
+    else if (i + 1 < n) s.classList.add('done');
+  });
+}
+
+function showLoading(id, show) {
+  document.getElementById(id).style.display = show ? 'block' : 'none';
+}
+
+// ============================================================
+// STEP1: 名刺アップロード
+// ============================================================
+const fileInput = document.getElementById('file-input');
+const previewImg = document.getElementById('preview-img');
+const previewContainer = document.getElementById('preview-container');
+const btnRead = document.getElementById('btn-read');
+const uploadArea = document.getElementById('upload-area');
+const uploadError = document.getElementById('upload-error');
+
+// ドラッグ＆ドロップ
+uploadArea.addEventListener('dragover', e => { e.preventDefault(); uploadArea.classList.add('drag'); });
+uploadArea.addEventListener('dragleave', () => uploadArea.classList.remove('drag'));
+uploadArea.addEventListener('drop', e => {
+  e.preventDefault();
+  uploadArea.classList.remove('drag');
+  const file = e.dataTransfer.files[0];
+  if (file) handleFile(file);
+});
+
+fileInput.addEventListener('change', e => {
+  const file = e.target.files[0];
+  if (file) handleFile(file);
+});
+
+function handleFile(file) {
+  uploadError.textContent = '';
+  if (!file.type.startsWith('image/')) {
+    uploadError.textContent = '画像ファイルを選択してください。';
+    return;
+  }
+  if (file.size > 10 * 1024 * 1024) {
+    uploadError.textContent = '10MB以下の画像を選択してください。';
+    return;
+  }
+  imageMediaType = file.type || 'image/jpeg';
+  const reader = new FileReader();
+  reader.onload = ev => {
+    const dataUrl = ev.target.result;
+    imageBase64 = dataUrl.split(',')[1];
+    previewImg.src = dataUrl;
+    previewContainer.style.display = 'block';
+    btnRead.disabled = false;
+  };
+  reader.readAsDataURL(file);
+}
+
+btnRead.addEventListener('click', readCard);
+
+async function readCard() {
+  const settings = getSettings();
+  if (!settings.apiKey) {
+    document.getElementById('api-warning').classList.add('show');
+    return;
+  }
+  document.getElementById('api-warning').classList.remove('show');
+
+  showSection(null);
+  showLoading('loading-read', true);
+  setStep(1);
+
+  const prompt = `この名刺画像を読み取り、以下の項目をJSON形式で返してください。項目が名刺に記載されていない場合は空文字にしてください。ふりがな（kana）は名刺に明記されている場合のみ記載し、名刺にない場合は必ず空文字にしてください。
+
+電話番号が複数ある場合は、携帯電話番号（090/080/070始まり）を tel に入れ、残りを tel_extra に入れてください。
+メールアドレスが複数ある場合は、最初のアドレスを email に入れ、残りを email_extra に入れてください。
+
+返答はJSONのみ、マークダウンや説明文は一切不要です。
+
+{
+  "name": "氏名",
+  "kana": "ふりがな（名刺記載のみ）",
+  "company": "会社名",
+  "dept": "部署名",
+  "role": "役職",
+  "email": "メールアドレス",
+  "email_extra": "2件目以降のメール（カンマ区切り）",
+  "tel": "電話番号（携帯優先）",
+  "tel_extra": "2件目以降の電話番号（カンマ区切り）",
+  "address": "住所"
+}`;
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': settings.apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true',
+      },
+      body: JSON.stringify({
+        model: 'claude-opus-4-5',
+        max_tokens: 800,
+        messages: [{
+          role: 'user',
+          content: [{
+            type: 'image',
+            source: { type: 'base64', media_type: imageMediaType, data: imageBase64 }
+          }, {
+            type: 'text',
+            text: prompt
+          }]
+        }]
+      })
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error?.message || `API エラー ${res.status}`);
+    }
+
+    const data = await res.json();
+    const text = data.content.map(c => c.text || '').join('');
+    const clean = text.replace(/```json|```/g, '').trim();
+
+    let parsed;
+    try { parsed = JSON.parse(clean); }
+    catch { throw new Error('JSONの解析に失敗しました。再度お試しください。'); }
+
+    // 備考まとめ
+    const extras = [];
+    if (parsed.tel_extra) extras.push('TEL: ' + parsed.tel_extra);
+    if (parsed.email_extra) extras.push('Email: ' + parsed.email_extra);
+
+    currentCard = {
+      name: parsed.name || '',
+      kana: parsed.kana || '',
+      company: parsed.company || '',
+      dept: parsed.dept || '',
+      role: parsed.role || '',
+      email: parsed.email || '',
+      tel: parsed.tel || '',
+      address: parsed.address || '',
+      note: extras.join('　'),
+    };
+
+    fillConfirmForm(currentCard);
+    showLoading('loading-read', false);
+    showSection('sec-confirm');
+    setStep(2);
+  } catch(e) {
+    showLoading('loading-read', false);
+    showSection('sec-upload');
+    uploadError.textContent = 'エラー: ' + e.message;
+  }
+}
+
+function fillConfirmForm(d) {
+  document.getElementById('f-name').value    = d.name;
+  document.getElementById('f-kana').value    = d.kana;
+  document.getElementById('f-company').value = d.company;
+  document.getElementById('f-dept').value    = d.dept;
+  document.getElementById('f-role').value    = d.role;
+  document.getElementById('f-email').value   = d.email;
+  document.getElementById('f-tel').value     = d.tel;
+  document.getElementById('f-address').value = d.address;
+  document.getElementById('f-note').value    = d.note;
+}
+
+// ============================================================
+// STEP2 → STEP3
+// ============================================================
+document.getElementById('btn-to-memo').addEventListener('click', () => {
+  const name = document.getElementById('f-name').value.trim();
+  if (!name) {
+    document.getElementById('confirm-error').textContent = '氏名を入力してください。';
+    return;
+  }
+  document.getElementById('confirm-error').textContent = '';
+
+  // フォームから最新値を取得
+  currentCard = {
+    name:    document.getElementById('f-name').value.trim(),
+    kana:    document.getElementById('f-kana').value.trim(),
+    company: document.getElementById('f-company').value.trim(),
+    dept:    document.getElementById('f-dept').value.trim(),
+    role:    document.getElementById('f-role').value.trim(),
+    email:   document.getElementById('f-email').value.trim(),
+    tel:     document.getElementById('f-tel').value.trim(),
+    address: document.getElementById('f-address').value.trim(),
+    note:    document.getElementById('f-note').value.trim(),
+  };
+
+  document.getElementById('f-date').value = todayStr();
+  showSection('sec-memo');
+  setStep(3);
+  showFloatBtn();
+});
+
+document.getElementById('btn-back-confirm').addEventListener('click', () => {
+  showSection('sec-confirm');
+  setStep(2);
+  hideFloatBtn();
+});
+
+// ============================================================
+// STEP3 → STEP4: 礼状生成
+// ============================================================
+document.getElementById('btn-generate').addEventListener('click', generateLetter);
+document.getElementById('btn-regen').addEventListener('click', generateLetter);
+
+async function generateLetter() {
+  const settings = getSettings();
+  if (!settings.apiKey) {
+    document.getElementById('memo-error').textContent = 'APIキーが設定されていません。';
+    return;
+  }
+
+  const memo   = document.getElementById('f-memo').value.trim();
+  const date   = document.getElementById('f-date').value || todayStr();
+  const sender = document.getElementById('f-sender').value.trim()
+               || buildSenderStr(settings);
+
+  document.getElementById('memo-error').textContent = '';
+  showSection(null);
+  showLoading('loading-gen', true);
+  setStep(4);
+
+  const dateJp = date.replace(/-/g, '年').replace(/-/, '月') + '日';
+  const recipient = buildRecipientStr(currentCard);
+
+  const prompt = `あなたはプロのライター・ジャーナリストです。
+以下の情報をもとに、名刺交換のお礼メールの下書きを作成してください。
+
+【宛先情報】
+${recipient}
+
+【名刺交換日】${dateJp}
+
+【状況・会話内容】
+${memo || '（特になし）'}
+
+【差出人】
+${sender}
+
+【礼状作成の指示】
+- 件名行（「件名：」で始める）と本文を作成する
+- 簡潔で誠実な文体。くどくならないこと
+- ですます調で、かつ丁寧すぎず自然な文体
+- メールの形式（宛名→本文→署名）で作成する
+- 署名は差出人情報をシンプルに記載する
+- 箇条書きは使わない
+- 全体で200〜350字程度が目安（簡潔に）
+- 余計な説明や注釈は一切不要。メール本文のみを出力する`;
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': settings.apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true',
+      },
+      body: JSON.stringify({
+        model: 'claude-opus-4-5',
+        max_tokens: 800,
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error?.message || `API エラー ${res.status}`);
+    }
+
+    const data = await res.json();
+    currentLetter = data.content.map(c => c.text || '').join('').trim();
+
+    document.getElementById('letter-editor').value = currentLetter;
+
+    // 現在のカードにメモ情報を付加して保存
+    currentCard.date   = date;
+    currentCard.memo   = document.getElementById('f-memo').value.trim();
+    currentCard.sender = sender;
+    currentCard.letter = currentLetter;
+    currentCard.id     = currentCard.id || generateId();
+    currentCard.savedAt = new Date().toISOString();
+
+    // localStorage 保存（既存なら更新）
+    const records = getRecords();
+    const idx = records.findIndex(r => r.id === currentCard.id);
+    if (idx !== -1) records[idx] = currentCard;
+    else records.unshift(currentCard);
+    saveRecords(records);
+
+    showLoading('loading-gen', false);
+    showSection('sec-letter');
+  } catch(e) {
+    showLoading('loading-gen', false);
+    showSection('sec-memo');
+    document.getElementById('memo-error').textContent = 'エラー: ' + e.message;
+    setStep(3);
+  }
+}
+
+function buildRecipientStr(card) {
+  const parts = [];
+  if (card.company) parts.push(card.company);
+  if (card.dept)    parts.push(card.dept);
+  if (card.role)    parts.push(card.role);
+  parts.push((card.name || '') + ' 様');
+  return parts.join('　');
+}
+
+function buildSenderStr(settings) {
+  const parts = [];
+  if (settings.senderName)  parts.push(settings.senderName);
+  if (settings.senderTitle) parts.push(settings.senderTitle);
+  if (settings.senderEmail) parts.push(settings.senderEmail);
+  return parts.join('\n');
+}
+
+// ============================================================
+// コピー・Gmail・リセット（新規タブ）
+// ============================================================
+document.getElementById('btn-copy').addEventListener('click', () => {
+  const text = document.getElementById('letter-editor').value;
+  navigator.clipboard.writeText(text).then(() => {
+    const fb = document.getElementById('copy-feedback');
+    fb.classList.add('show');
+    setTimeout(() => fb.classList.remove('show'), 2000);
+  });
+});
+
+document.getElementById('btn-gmail').addEventListener('click', () => {
+  openGmail(
+    document.getElementById('letter-editor').value,
+    currentCard.email,
+    getSettings()
+  );
+});
+
+function openGmail(text, toEmail, settings) {
+  const lines = text.split('\n');
+  let subject = '';
+  let body    = text;
+  if (lines[0].startsWith('件名：') || lines[0].startsWith('件名:')) {
+    subject = lines[0].replace(/^件名[：:]\s*/, '').trim();
+    body    = lines.slice(1).join('\n').replace(/^\n+/, '');
+  }
+
+  const gmailFrom = settings.gmail || '';
+  const params = new URLSearchParams({
+    to:      toEmail || '',
+    su:      subject,
+    body:    body,
+  });
+  if (gmailFrom) params.set('authuser', gmailFrom);
+
+  const url = `https://mail.google.com/mail/?view=cm&fs=1&${params.toString()}`;
+  window.open(url, '_blank');
+}
+
+document.getElementById('btn-reset').addEventListener('click', () => {
+  if (!confirm('入力内容をクリアして最初に戻りますか？')) return;
+  resetNewTab();
+});
+
+function resetNewTab() {
+  currentCard  = {};
+  currentLetter = '';
+  imageBase64  = '';
+  document.getElementById('f-name').value = '';
+  document.getElementById('file-input').value = '';
+  previewImg.src = '';
+  previewContainer.style.display = 'none';
+  btnRead.disabled = true;
+  document.getElementById('letter-editor').value = '';
+  document.getElementById('f-memo').value = '';
+  document.getElementById('upload-error').textContent = '';
+  document.getElementById('memo-error').textContent = '';
+  showSection('sec-upload');
+  setStep(1);
+  hideFloatBtn();
+}
+
+// ============================================================
+// フロートボタン → スプレッドシートに記録
+// ============================================================
+document.getElementById('float-sheet-btn').addEventListener('click', () => {
+  const activeTab = document.querySelector('.tab-btn.active')?.dataset.tab;
+  if (activeTab === 'list' && selectedRecordId) {
+    const record = getRecords().find(r => r.id === selectedRecordId);
+    if (record) sendToSheet(record, document.getElementById('det-sheet-status'));
+  } else {
+    sendToSheet(currentCard, null);
+  }
+});
+
+async function sendToSheet(card, statusEl) {
+  const settings = getSettings();
+  if (!settings.gasUrl) {
+    if (statusEl) { statusEl.className = 'sheet-status err'; statusEl.textContent = 'GAS URLが設定されていません。'; }
+    return;
+  }
+  if (statusEl) { statusEl.className = 'sheet-status'; statusEl.textContent = '送信中…'; }
+
+  const payload = {
+    name:    card.name,
+    kana:    card.kana,
+    company: card.company,
+    dept:    card.dept,
+    role:    card.role,
+    email:   card.email,
+    tel:     card.tel,
+    address: card.address,
+    note:    card.note,
+    date:    card.date,
+    memo:    card.memo,
+    sender:  card.sender,
+  };
+
+  try {
+    await fetch(settings.gasUrl, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    if (statusEl) { statusEl.className = 'sheet-status ok'; statusEl.textContent = '✓ スプレッドシートに記録しました'; }
+  } catch(e) {
+    if (statusEl) { statusEl.className = 'sheet-status err'; statusEl.textContent = '送信に失敗しました: ' + e.message; }
+  }
+}
+
+// ============================================================
+// 名刺リストタブ
+// ============================================================
+function renderRecordList() {
+  const area = document.getElementById('record-list-area');
+  const records = getRecords();
+
+  document.getElementById('record-detail-wrap').style.display = 'none';
+  selectedRecordId = null;
+
+  if (records.length === 0) {
+    area.innerHTML = '<div class="empty-state" id="empty-list"><span class="empty-icon">🗂️</span><p>まだ名刺が保存されていません。</p></div>';
+    return;
+  }
+
+  area.innerHTML = records.map(r => {
+    const dateStr = r.date ? r.date.replace(/-/g, '/') : '';
+    const hasMemo = r.memo ? '✓ メモあり' : '';
+    return `<div class="record-card" data-id="${r.id}">
+      <div class="record-card-name">${esc(r.name)}${r.company ? '　<small style="font-weight:300;font-size:0.8em;">' + esc(r.company) + '</small>' : ''}</div>
+      <div class="record-card-meta">
+        ${dateStr ? '<span>📅 ' + dateStr + '</span>' : ''}
+        ${hasMemo ? '<span>📝 ' + hasMemo + '</span>' : ''}
+        ${r.letter ? '<span class="badge badge-done">礼状あり</span>' : '<span class="badge badge-pending">礼状未生成</span>'}
+      </div>
+    </div>`;
+  }).join('');
+
+  area.querySelectorAll('.record-card').forEach(card => {
+    card.addEventListener('click', () => selectRecord(card.dataset.id));
+  });
+}
+
+function selectRecord(id) {
+  selectedRecordId = id;
+  document.querySelectorAll('.record-card').forEach(c => c.classList.remove('selected'));
+  const el = document.querySelector(`.record-card[data-id="${id}"]`);
+  if (el) el.classList.add('selected');
+
+  const record = getRecords().find(r => r.id === id);
+  if (!record) return;
+
+  document.getElementById('detail-title-name').textContent = record.name + (record.company ? '（' + record.company + '）' : '');
+
+  const info = document.getElementById('detail-info');
+  info.innerHTML = [
+    ['部署・役職', [record.dept, record.role].filter(Boolean).join('　')],
+    ['メール', record.email],
+    ['電話', record.tel],
+    ['住所', record.address],
+    ['備考', record.note],
+    ['交換日', record.date],
+  ].filter(([,v]) => v).map(([k,v]) =>
+    `<div class="detail-row"><span class="detail-key">${k}</span><span class="detail-val">${esc(v)}</span></div>`
+  ).join('');
+
+  document.getElementById('det-memo').value = record.memo || '';
+  document.getElementById('det-letter-wrap').style.display = 'none';
+  document.getElementById('det-error').textContent = '';
+  document.getElementById('det-sheet-status').textContent = '';
+
+  document.getElementById('record-detail-wrap').style.display = 'block';
+  document.getElementById('record-detail-wrap').scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+  showFloatBtn();
+}
+
+document.getElementById('btn-det-gen').addEventListener('click', async () => {
+  const settings = getSettings();
+  if (!settings.apiKey) {
+    document.getElementById('det-error').textContent = 'APIキーが設定されていません。';
+    return;
+  }
+
+  const record = getRecords().find(r => r.id === selectedRecordId);
+  if (!record) return;
+
+  const memo = document.getElementById('det-memo').value.trim();
+  const sender = buildSenderStr(settings);
+  const recipient = buildRecipientStr(record);
+  const dateJp = (record.date || todayStr()).replace(/-/g, '年').replace(/-/, '月') + '日';
+
+  document.getElementById('det-error').textContent = '';
+  document.getElementById('loading-det').style.display = 'block';
+  document.getElementById('det-letter-wrap').style.display = 'none';
+
+  const prompt = `あなたはプロのライター・ジャーナリストです。
+以下の情報をもとに、名刺交換のお礼メールの下書きを作成してください。
+
+【宛先情報】
+${recipient}
+
+【名刺交換日】${dateJp}
+
+【状況・会話内容】
+${memo || '（特になし）'}
+
+【差出人】
+${sender}
+
+【礼状作成の指示】
+- 件名行（「件名：」で始める）と本文を作成する
+- 簡潔で誠実な文体。くどくならないこと
+- ですます調で、かつ丁寧すぎず自然な文体
+- メールの形式（宛名→本文→署名）で作成する
+- 署名は差出人情報をシンプルに記載する
+- 箇条書きは使わない
+- 全体で200〜350字程度が目安（簡潔に）
+- 余計な説明や注釈は一切不要。メール本文のみを出力する`;
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': settings.apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true',
+      },
+      body: JSON.stringify({
+        model: 'claude-opus-4-5',
+        max_tokens: 800,
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error?.message || `API エラー ${res.status}`);
+    }
+
+    const data = await res.json();
+    const letter = data.content.map(c => c.text || '').join('').trim();
+
+    document.getElementById('det-letter-editor').value = letter;
+    document.getElementById('det-letter-wrap').style.display = 'block';
+    document.getElementById('loading-det').style.display = 'none';
+
+    // 保存
+    updateRecord(selectedRecordId, { letter, memo });
+  } catch(e) {
+    document.getElementById('loading-det').style.display = 'none';
+    document.getElementById('det-error').textContent = 'エラー: ' + e.message;
+  }
+});
+
+document.getElementById('btn-det-copy').addEventListener('click', () => {
+  const text = document.getElementById('det-letter-editor').value;
+  navigator.clipboard.writeText(text).then(() => {
+    const fb = document.getElementById('det-copy-feedback');
+    fb.classList.add('show');
+    setTimeout(() => fb.classList.remove('show'), 2000);
+  });
+});
+
+document.getElementById('btn-det-gmail').addEventListener('click', () => {
+  const record = getRecords().find(r => r.id === selectedRecordId);
+  openGmail(
+    document.getElementById('det-letter-editor').value,
+    record?.email || '',
+    getSettings()
+  );
+});
+
+document.getElementById('btn-det-delete').addEventListener('click', () => {
+  if (!confirm('この記録を削除しますか？')) return;
+  deleteRecord(selectedRecordId);
+  document.getElementById('record-detail-wrap').style.display = 'none';
+  hideFloatBtn();
+  renderRecordList();
+});
+
+// フロート → 名刺リストタブ用
+
+
+// ============================================================
+// 設定タブ
+// ============================================================
+function loadSettingsForm() {
+  const s = getSettings();
+  document.getElementById('s-apikey').value      = s.apiKey || '';
+  document.getElementById('s-sender-name').value  = s.senderName || '';
+  document.getElementById('s-sender-title').value = s.senderTitle || '';
+  document.getElementById('s-sender-email').value = s.senderEmail || '';
+  document.getElementById('s-gas-url').value      = s.gasUrl || '';
+  document.getElementById('s-gmail').value        = s.gmail || '';
+}
+
+document.getElementById('btn-save-settings').addEventListener('click', () => {
+  const s = {
+    apiKey:      document.getElementById('s-apikey').value.trim(),
+    senderName:  document.getElementById('s-sender-name').value.trim(),
+    senderTitle: document.getElementById('s-sender-title').value.trim(),
+    senderEmail: document.getElementById('s-sender-email').value.trim(),
+    gasUrl:      document.getElementById('s-gas-url').value.trim(),
+    gmail:       document.getElementById('s-gmail').value.trim(),
+  };
+  saveSettings(s);
+  const st = document.getElementById('settings-status');
+  st.className = 'sheet-status ok';
+  st.textContent = '✓ 設定を保存しました';
+  setTimeout(() => { st.textContent = ''; }, 3000);
+});
+
+document.getElementById('btn-clear-all').addEventListener('click', () => {
+  if (!confirm('すべての名刺データを削除します。この操作は元に戻せません。よろしいですか？')) return;
+  localStorage.removeItem(STORAGE_KEY);
+  alert('データを削除しました。');
+});
+
+// ============================================================
+// ユーティリティ
+// ============================================================
+function esc(str) {
+  return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ============================================================
+// 初期化
+// ============================================================
+(function init() {
+  // APIキー確認
+  const settings = getSettings();
+  if (!settings.apiKey) {
+    document.getElementById('api-warning').classList.add('show');
+  }
+  // 今日の日付セット
+  document.getElementById('f-date').value = todayStr();
+  setStep(1);
+})();
+</script>
+</body>
+</html>
