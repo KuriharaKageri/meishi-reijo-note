@@ -1185,11 +1185,8 @@ function openGmail(text, toEmail, settings) {
     const isAndroid = /Android/.test(navigator.userAgent);
     if (isAndroid) {
       // AndroidはmailtoでGmailアプリが直接開く
-      // Androidも改行は
-に変換
-      const bodyAndroidCRLF = body.replace(/
-/g, '
-');
+      // Androidも改行は\r\nに変換
+      const bodyAndroidCRLF = body.replace(/\n/g, '\r\n');
       const mailtoUrl = 'mailto:' + encodeURIComponent(toEmail || '')
                       + '?subject=' + encodeURIComponent(subject)
                       + '&body='    + encodeURIComponent(bodyAndroidCRLF);
