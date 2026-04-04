@@ -427,7 +427,7 @@ textarea.field-value { min-height: 80px; resize: vertical; line-height: 1.6; }
 
 <header>
   <h1>名刺礼状アシスタント</h1>
-  <span>MEISHI → REIJO v1.8</span>
+  <span>MEISHI → REIJO v1.9</span>
 </header>
 
 <div class="tab-nav">
@@ -695,6 +695,7 @@ textarea.field-value { min-height: 80px; resize: vertical; line-height: 1.6; }
     <span class="icon">📋</span>シートに記録する
   </button>
 </div>
+
 
 <script>
 // ============================================================
@@ -1184,13 +1185,17 @@ function openGmail(text, toEmail, settings) {
   } else {
     const isAndroid = /Android/.test(navigator.userAgent);
     if (isAndroid) {
-      // AndroidはmailtoでGmailアプリが直接開く
-      // Androidも改行は\r\nに変換
+      // Androidはintent://スキームでGmailアプリを直接指定して起動
+      // mailto:だと機種によってブラウザに飛んでしまうため
       const bodyAndroidCRLF = body.replace(/\n/g, '\r\n');
-      const mailtoUrl = 'mailto:' + encodeURIComponent(toEmail || '')
-                      + '?subject=' + encodeURIComponent(subject)
-                      + '&body='    + encodeURIComponent(bodyAndroidCRLF);
-      window.location.href = mailtoUrl;
+      const intentUrl = 'intent://send'
+                      + '?to='      + encodeURIComponent(toEmail || '')
+                      + '&subject=' + encodeURIComponent(subject)
+                      + '&body='    + encodeURIComponent(bodyAndroidCRLF)
+                      + '#Intent;scheme=mailto'
+                      + ';package=com.google.android.gm'
+                      + ';end';
+      window.location.href = intentUrl;
     } else {
       // PC（Mac・Windows）はウェブGmail新規作成画面
       const webUrl = 'https://mail.google.com/mail/?view=cm&fs=1'
