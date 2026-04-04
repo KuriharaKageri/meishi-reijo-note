@@ -427,7 +427,7 @@ textarea.field-value { min-height: 80px; resize: vertical; line-height: 1.6; }
 
 <header>
   <h1>名刺礼状アシスタント</h1>
-  <span>MEISHI → REIJO v1.9</span>
+  <span>MEISHI → REIJO v2.0</span>
 </header>
 
 <div class="tab-nav">
@@ -1183,28 +1183,13 @@ function openGmail(text, toEmail, settings) {
                     + '&body='    + encodeURIComponent(bodyIOSCRLF);
     window.location.href = mailtoUrl;
   } else {
-    const isAndroid = /Android/.test(navigator.userAgent);
-    if (isAndroid) {
-      // Androidはintent://スキームでGmailアプリを直接指定して起動
-      // mailto:だと機種によってブラウザに飛んでしまうため
-      const bodyAndroidCRLF = body.replace(/\n/g, '\r\n');
-      const intentUrl = 'intent://send'
-                      + '?to='      + encodeURIComponent(toEmail || '')
-                      + '&subject=' + encodeURIComponent(subject)
-                      + '&body='    + encodeURIComponent(bodyAndroidCRLF)
-                      + '#Intent;scheme=mailto'
-                      + ';package=com.google.android.gm'
-                      + ';end';
-      window.location.href = intentUrl;
-    } else {
-      // PC（Mac・Windows）はウェブGmail新規作成画面
-      const webUrl = 'https://mail.google.com/mail/?view=cm&fs=1'
-                   + '&to='   + encodeURIComponent(toEmail || '')
-                   + '&su='   + encodeURIComponent(subject)
-                   + '&body=' + encodeURIComponent(body)
-                   + (gmailFrom ? '&authuser=' + encodeURIComponent(gmailFrom) : '');
-      window.open(webUrl, '_blank');
-    }
+    // Android・PC（Mac・Windows）ともにウェブGmail新規作成画面
+    const webUrl = 'https://mail.google.com/mail/?view=cm&fs=1'
+                 + '&to='   + encodeURIComponent(toEmail || '')
+                 + '&su='   + encodeURIComponent(subject)
+                 + '&body=' + encodeURIComponent(body)
+                 + (gmailFrom ? '&authuser=' + encodeURIComponent(gmailFrom) : '');
+    window.open(webUrl, '_blank');
   }
 }
 
