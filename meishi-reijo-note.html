@@ -427,7 +427,13 @@ textarea.field-value { min-height: 80px; resize: vertical; line-height: 1.6; }
 
 <header>
   <h1>名刺礼状アシスタント</h1>
-  <span>MEISHI → REIJO v2.1</span>
+  <span>MEISHI → REIJO v2.3</span>
+  <button id="btn-header-reset" style="
+    margin-left:auto;background:transparent;border:1px solid rgba(255,255,255,0.3);
+    color:rgba(255,255,255,0.7);font-size:0.72rem;padding:0.3rem 0.7rem;
+    border-radius:3px;cursor:pointer;font-family:inherit;white-space:nowrap;
+    display:none;
+  ">✕ 最初に戻る</button>
 </header>
 
 <div class="tab-nav">
@@ -946,6 +952,7 @@ FAXと明記されている番号はFAX番号です。tel にも tel_extra に�
     showLoading('loading-read', false);
     showSection('sec-confirm');
     setStep(2);
+    document.getElementById('btn-header-reset').style.display = 'inline-block';
   } catch(e) {
     showLoading('loading-read', false);
     showSection('sec-upload');
@@ -975,6 +982,7 @@ document.getElementById('btn-to-memo').addEventListener('click', () => {
     return;
   }
   document.getElementById('confirm-error').textContent = '';
+  document.getElementById('btn-header-reset').style.display = 'inline-block';
 
   // フォームから最新値を取得
   currentCard = {
@@ -993,12 +1001,32 @@ document.getElementById('btn-to-memo').addEventListener('click', () => {
   showSection('sec-memo');
   setStep(3);
   showFloatBtn();
+  document.getElementById('btn-header-reset').style.display = 'inline-block';
+
+  // メモ入力のリアルタイム反映（シート記録用）
+  const syncMemo = () => {
+    currentCard.memo   = document.getElementById('f-memo').value.trim();
+    currentCard.date   = document.getElementById('f-date').value || todayStr();
+    currentCard.sender = document.getElementById('f-sender').value.trim() || buildSenderStr(getSettings());
+    // localStorageにも保存
+    if (!currentCard.id) currentCard.id = generateId();
+    currentCard.savedAt = new Date().toISOString();
+    const records = getRecords();
+    const idx = records.findIndex(r => r.id === currentCard.id);
+    if (idx !== -1) records[idx] = currentCard;
+    else records.unshift(currentCard);
+    saveRecords(records);
+  };
+  document.getElementById('f-memo').addEventListener('input', syncMemo);
+  document.getElementById('f-date').addEventListener('change', syncMemo);
+  document.getElementById('f-sender').addEventListener('input', syncMemo);
 });
 
 document.getElementById('btn-back-confirm').addEventListener('click', () => {
   showSection('sec-confirm');
   setStep(2);
   hideFloatBtn();
+  document.getElementById('btn-header-reset').style.display = 'none';
 });
 
 // ============================================================
@@ -1216,6 +1244,7 @@ function resetNewTab() {
   showSection('sec-upload');
   setStep(1);
   hideFloatBtn();
+  document.getElementById('btn-header-reset').style.display = 'none';
 }
 
 // ============================================================
@@ -1500,6 +1529,11 @@ function esc(str) {
 // ============================================================
 // 初期化
 // ============================================================
+document.getElementById('btn-header-reset').addEventListener('click', () => {
+  if (!confirm('入力内容をクリアして最初に戻りますか？')) return;
+  resetNewTab();
+});
+
 (function init() {
   // APIキー確認
   const settings = getSettings();
