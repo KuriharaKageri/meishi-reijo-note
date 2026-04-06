@@ -427,7 +427,7 @@ textarea.field-value { min-height: 80px; resize: vertical; line-height: 1.6; }
 
 <header>
   <h1>名刺礼状アシスタント</h1>
-  <span>MEISHI → REIJO v2.4</span>
+  <span>MEISHI → REIJO v2.5</span>
   <button id="btn-header-reset" style="
     margin-left:auto;background:transparent;border:1px solid rgba(255,255,255,0.3);
     color:rgba(255,255,255,0.7);font-size:0.72rem;padding:0.3rem 0.7rem;
@@ -566,11 +566,9 @@ textarea.field-value { min-height: 80px; resize: vertical; line-height: 1.6; }
   <div class="section" id="sec-letter">
     <p class="section-title">礼状の下書き（編集できます）</p>
     <textarea class="letter-editor" id="letter-editor" spellcheck="false"></textarea>
-    <div class="btn-row" style="margin-top:0.8rem;">
-      <button class="btn btn-secondary" id="btn-copy">テキストをコピー</button>
-      <button class="btn btn-blue" id="btn-gmail">Gmailで開く</button>
-    </div>
-    <span class="copy-feedback" id="copy-feedback">コピーしました ✓</span>
+    <button class="btn btn-primary" id="btn-copy" style="margin-top:0.8rem;">📋 テキストをコピー</button>
+    <span class="copy-feedback" id="copy-feedback">コピーしました ✓ Gmailアプリに貼り付けてください</span>
+    <button class="btn btn-secondary" id="btn-gmail" style="margin-top:0.5rem;font-size:0.78rem;">🌐 Web版Gmailで開く（PC・要ログイン）</button>
     <hr class="divider">
     <button class="btn btn-secondary btn-small" id="btn-regen" style="width:auto;">↩ 下書きを再生成</button>
     <button class="reset-link" id="btn-reset">次の名刺へ（最初に戻る）</button>
@@ -615,11 +613,9 @@ textarea.field-value { min-height: 80px; resize: vertical; line-height: 1.6; }
     <div id="det-letter-wrap" style="display:none;margin-top:1rem;">
       <p class="section-title">礼状の下書き（編集できます）</p>
       <textarea class="letter-editor" id="det-letter-editor" spellcheck="false"></textarea>
-      <div class="btn-row">
-        <button class="btn btn-secondary" id="btn-det-copy">テキストをコピー</button>
-        <button class="btn btn-blue" id="btn-det-gmail">Gmailで開く</button>
-      </div>
-      <span class="copy-feedback" id="det-copy-feedback">コピーしました ✓</span>
+      <button class="btn btn-primary" id="btn-det-copy" style="margin-top:0.8rem;">📋 テキストをコピー</button>
+      <span class="copy-feedback" id="det-copy-feedback">コピーしました ✓ Gmailアプリに貼り付けてください</span>
+      <button class="btn btn-secondary" id="btn-det-gmail" style="margin-top:0.5rem;font-size:0.78rem;">🌐 Web版Gmailで開く（PC・要ログイン）</button>
     </div>
 
     <div class="error-msg" id="det-error"></div>
@@ -872,17 +868,25 @@ async function readCard() {
   showLoading('loading-read', true);
   setStep(1);
 
-  const prompt = `この名刺画像を読み取り、以下の項目をJSON形式で返してください。項目が名刺に記載されていない場合は空文字にしてください。ふりがな（kana）は名刺に明記されている場合のみ記載し、名刺にない場合は必ず空文字にしてください。
+  const prompt = `この名刺画像を読み取り、以下の項目をJSON形式で返してください。
 
-電話番号が複数ある場合は、携帯電話番号（090/080/070始まり）を tel に入れ、残りを tel_extra に入れてください。
-FAXと明記されている番号はFAX番号です。tel にも tel_extra にも含めず、完全に無視してください。
-メールアドレスが複数ある場合は、最初のアドレスを email に入れ、残りを email_extra に入れてください。
+【ふりがな（kana）の処理ルール】
+1. 名刺に平仮名または片仮名でふりがなが記載されている場合：そのまま平仮名で記載する
+2. 名刺にローマ字で読み方が記載されている場合（例：TANAKA TARO、Yamada Hanako）：平仮名に変換して記載する（例：たなか たろう、やまだ はなこ）
+3. ふりがなもローマ字もない場合：漢字から姓のみ読みを類推して平仮名で記載する（名は空欄のまま。例：「山田」→「やまだ」）
+
+【電話番号】
+複数ある場合は携帯電話番号（090/080/070始まり）を tel に入れ、残りを tel_extra に入れてください。
+FAXと明記されている番号は tel にも tel_extra にも含めず完全に無視してください。
+
+【メールアドレス】
+複数ある場合は最初のアドレスを email に入れ、残りを email_extra に入れてください。
 
 返答はJSONのみ、マークダウンや説明文は一切不要です。
 
 {
   "name": "氏名",
-  "kana": "ふりがな（名刺記載のみ）",
+  "kana": "ふりがな（上記ルールに従い必ず何か入れる）",
   "company": "会社名",
   "dept": "部署名",
   "role": "役職",
