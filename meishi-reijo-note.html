@@ -427,7 +427,7 @@ textarea.field-value { min-height: 80px; resize: vertical; line-height: 1.6; }
 
 <header>
   <h1>名刺礼状アシスタント</h1>
-  <span>MEISHI → REIJO v2.6</span>
+  <span>MEISHI → REIJO v2.7</span>
   <button id="btn-header-reset" style="
     margin-left:auto;background:transparent;border:1px solid rgba(255,255,255,0.3);
     color:rgba(255,255,255,0.7);font-size:0.72rem;padding:0.3rem 0.7rem;
@@ -566,9 +566,11 @@ textarea.field-value { min-height: 80px; resize: vertical; line-height: 1.6; }
   <div class="section" id="sec-letter">
     <p class="section-title">礼状の下書き（編集できます）</p>
     <textarea class="letter-editor" id="letter-editor" spellcheck="false"></textarea>
-    <button class="btn btn-primary" id="btn-copy" style="margin-top:0.8rem;">📋 テキストをコピー</button>
-    <span class="copy-feedback" id="copy-feedback">コピーしました ✓ Gmailアプリに貼り付けてください</span>
-    <button class="btn btn-secondary" id="btn-gmail" style="margin-top:0.5rem;font-size:0.78rem;">🌐 Web版Gmailで開く（PC・要ログイン）</button>
+    <div class="btn-row" style="margin-top:0.8rem;">
+      <button class="btn btn-secondary" id="btn-copy">テキストをコピー</button>
+      <button class="btn btn-blue" id="btn-gmail">Gmailで開く</button>
+    </div>
+    <span class="copy-feedback" id="copy-feedback">コピーしました ✓</span>
     <hr class="divider">
     <button class="btn btn-secondary btn-small" id="btn-regen" style="width:auto;">↩ 下書きを再生成</button>
     <button class="reset-link" id="btn-reset">次の名刺へ（最初に戻る）</button>
@@ -613,9 +615,11 @@ textarea.field-value { min-height: 80px; resize: vertical; line-height: 1.6; }
     <div id="det-letter-wrap" style="display:none;margin-top:1rem;">
       <p class="section-title">礼状の下書き（編集できます）</p>
       <textarea class="letter-editor" id="det-letter-editor" spellcheck="false"></textarea>
-      <button class="btn btn-primary" id="btn-det-copy" style="margin-top:0.8rem;">📋 テキストをコピー</button>
-      <span class="copy-feedback" id="det-copy-feedback">コピーしました ✓ Gmailアプリに貼り付けてください</span>
-      <button class="btn btn-secondary" id="btn-det-gmail" style="margin-top:0.5rem;font-size:0.78rem;">🌐 Web版Gmailで開く（PC・要ログイン）</button>
+      <div class="btn-row">
+        <button class="btn btn-secondary" id="btn-det-copy">テキストをコピー</button>
+        <button class="btn btn-blue" id="btn-det-gmail">Gmailで開く</button>
+      </div>
+      <span class="copy-feedback" id="det-copy-feedback">コピーしました ✓</span>
     </div>
 
     <div class="error-msg" id="det-error"></div>
