@@ -427,7 +427,7 @@ textarea.field-value { min-height: 80px; resize: vertical; line-height: 1.6; }
 
 <header>
   <h1>名刺礼状アシスタント</h1>
-  <span>MEISHI → REIJO v2.3</span>
+  <span>MEISHI → REIJO v2.4</span>
   <button id="btn-header-reset" style="
     margin-left:auto;background:transparent;border:1px solid rgba(255,255,255,0.3);
     color:rgba(255,255,255,0.7);font-size:0.72rem;padding:0.3rem 0.7rem;
@@ -1212,7 +1212,8 @@ function openGmail(text, toEmail, settings) {
     window.location.href = mailtoUrl;
   } else {
     // Android・PC（Mac・Windows）ともにウェブGmail新規作成画面
-    const webUrl = 'https://mail.google.com/mail/?view=cm&fs=1'
+    // tf=1 で新規作成画面に強制遷移
+    const webUrl = 'https://mail.google.com/mail/?view=cm&fs=1&tf=1'
                  + '&to='   + encodeURIComponent(toEmail || '')
                  + '&su='   + encodeURIComponent(subject)
                  + '&body=' + encodeURIComponent(body)
