@@ -427,7 +427,7 @@ textarea.field-value { min-height: 80px; resize: vertical; line-height: 1.6; }
 
 <header>
   <h1>名刺礼状アシスタント</h1>
-  <span>MEISHI → REIJO v2.7</span>
+  <span>MEISHI → REIJO v2.8</span>
   <button id="btn-header-reset" style="
     margin-left:auto;background:transparent;border:1px solid rgba(255,255,255,0.3);
     color:rgba(255,255,255,0.7);font-size:0.72rem;padding:0.3rem 0.7rem;
@@ -681,6 +681,15 @@ textarea.field-value { min-height: 80px; resize: vertical; line-height: 1.6; }
       <label class="settings-label">送信者Gmailアドレス</label>
       <input class="settings-input" id="s-gmail" type="email" placeholder="your@gmail.com">
       <p class="settings-note">「Gmailで開く」ボタンの送信元として使用します。</p>
+    </div>
+    <div class="settings-row">
+      <label class="settings-label">Android Gmail起動方式</label>
+      <select class="settings-input" id="s-android-gmail">
+        <option value="mailto">mailto:（デフォルトメールアプリがGmailの場合）</option>
+        <option value="intent">intent://（Gmailアプリを直接指定）</option>
+        <option value="web">Web版Gmail（ブラウザで開く）</option>
+      </select>
+      <p class="settings-note">AndroidでGmailアプリが開かない場合に変更してください。「mailto:」はAndroidの設定でGmailをデフォルトメールアプリにしている場合に有効です。「intent://」はGmailアプリを直接指定します。</p>
     </div>
   </div>
 
@@ -1221,13 +1230,33 @@ function openGmail(text, toEmail, settings) {
   } else {
     const isAndroid = /Android/.test(navigator.userAgent);
     if (isAndroid) {
-      // AndroidはデフォルトメールアプリにGmailを設定していればmailtoで直接開く
-      // 設定：Androidの「設定」→「アプリ」→「デフォルトアプリ」→「メールアプリ」→Gmail
+      const androidMode = settings.androidGmail || 'mailto';
       const bodyAndroidCRLF = body.replace(/\n/g, '\r\n');
-      const mailtoUrl = 'mailto:' + encodeURIComponent(toEmail || '')
-                      + '?subject=' + encodeURIComponent(subject)
-                      + '&body='    + encodeURIComponent(bodyAndroidCRLF);
-      window.location.href = mailtoUrl;
+      if (androidMode === 'intent') {
+        // Gmailアプリを直接指定して起動
+        const intentUrl = 'intent://send'
+                        + '?to='      + encodeURIComponent(toEmail || '')
+                        + '&subject=' + encodeURIComponent(subject)
+                        + '&body='    + encodeURIComponent(bodyAndroidCRLF)
+                        + '#Intent;scheme=mailto'
+                        + ';package=com.google.android.gm'
+                        + ';end';
+        window.location.href = intentUrl;
+      } else if (androidMode === 'web') {
+        // Web版Gmailをブラウザで開く
+        const webUrl = 'https://mail.google.com/mail/?view=cm&fs=1&tf=1'
+                     + '&to='   + encodeURIComponent(toEmail || '')
+                     + '&su='   + encodeURIComponent(subject)
+                     + '&body=' + encodeURIComponent(body)
+                     + (gmailFrom ? '&authuser=' + encodeURIComponent(gmailFrom) : '');
+        window.open(webUrl, '_blank');
+      } else {
+        // mailto:（デフォルト）
+        const mailtoUrl = 'mailto:' + encodeURIComponent(toEmail || '')
+                        + '?subject=' + encodeURIComponent(subject)
+                        + '&body='    + encodeURIComponent(bodyAndroidCRLF);
+        window.location.href = mailtoUrl;
+      }
     } else {
       // PC（Mac・Windows）はウェブGmail新規作成画面
       const webUrl = 'https://mail.google.com/mail/?view=cm&fs=1&tf=1'
@@ -1510,9 +1539,10 @@ function loadSettingsForm() {
   document.getElementById('s-sender-name').value  = s.senderName || '';
   document.getElementById('s-sender-title').value = s.senderTitle || '';
   document.getElementById('s-sender-email').value = s.senderEmail || '';
-  document.getElementById('s-signature').value    = s.signature || '';
-  document.getElementById('s-gas-url').value      = s.gasUrl || '';
-  document.getElementById('s-gmail').value        = s.gmail || '';
+  document.getElementById('s-signature').value        = s.signature || '';
+  document.getElementById('s-gas-url').value          = s.gasUrl || '';
+  document.getElementById('s-gmail').value            = s.gmail || '';
+  document.getElementById('s-android-gmail').value   = s.androidGmail || 'mailto';
 }
 
 document.getElementById('btn-save-settings').addEventListener('click', () => {
@@ -1522,8 +1552,9 @@ document.getElementById('btn-save-settings').addEventListener('click', () => {
     senderTitle: document.getElementById('s-sender-title').value.trim(),
     senderEmail: document.getElementById('s-sender-email').value.trim(),
     signature:   document.getElementById('s-signature').value,
-    gasUrl:      document.getElementById('s-gas-url').value.trim(),
-    gmail:       document.getElementById('s-gmail').value.trim(),
+    gasUrl:        document.getElementById('s-gas-url').value.trim(),
+    gmail:         document.getElementById('s-gmail').value.trim(),
+    androidGmail:  document.getElementById('s-android-gmail').value,
   };
   saveSettings(s);
   const st = document.getElementById('settings-status');
